@@ -19,25 +19,25 @@ Torus.ui.new_room = function(event) {
 	event.room.add_listener('io', 'ban', Torus.ui.add_line);
 	event.room.add_listener('io', 'unban', Torus.ui.add_line);
 
-	if(!event.room.parent && !Torus.options['pings-' + event.room.domain + '-enabled']) {
-		Torus.options['pings-' + event.room.domain + '-enabled'] = true;
-		Torus.options['pings-' + event.room.domain + '-literal'] = '';
-		Torus.options['pings-' + event.room.domain + '-regex'] = '';
-
-		Torus.ext.options.dir.pings[event.room.domain] = {
-			enabled: {type: 'boolean'},
-			literal: {type: 'text', help: ''}, //FIXME: i18n something
-			regex: {type: 'text', help: ''}, //FIXME: i18n something
-		};
+	if(!event.room.parent && !Torus.ui.pings.dir[event.room.domain]) {
+		Torus.ui.pings.dir[event.room.domain] = Torus.ui.pings.dir['#global'];
+		Torus.ui.pings.dir[event.room.domain].enabled = true;
+		Torus.ui.pings.dir[event.room.domain].literal = [];
+		Torus.ui.pings.dir[event.room.domain].regex = [];
+		Torus.ui.pings.rebuild();
 	}
 
 	for(var i in Torus.logs) {
 		if(!Torus.logs[i][event.room.domain]) {Torus.logs[i][event.room.domain] = [];}
 	}
+
+	event.room.listeners.ui = {};
 }
 
 Torus.ui.add_room = function(event) {
-	event.room.listeners.ui = {};
+	for(var i = 0; i < Torus.ui.ids['tabs'].children.length; i++) {
+		if(Torus.ui.ids['tabs'].children[i].getAttribute('data-id') == event.room.domain) {return;}
+	}
 
 	var tab = document.createElement('span');
 	tab.id = 'torus-tab-' + event.room.domain;
@@ -58,7 +58,7 @@ Torus.ui.add_room = function(event) {
 	}
 	Torus.ui.ids['tabs'].appendChild(tab);
 
-	Torus.ui.activate(event.room);
+	if(!event.room.parent) {Torus.ui.activate(event.room);}
 }
 
 Torus.ui.remove_room = function(room) {
@@ -75,18 +75,26 @@ Torus.ui.remove_room = function(room) {
 }
 
 Torus.ui.add_line = function(event) {
-	if(event.text && !event.html) {Torus.ui.parse_message(event);}
+	if(typeof event.text == 'string' && !event.html) {Torus.ui.parse_message(event);}
 
 	Torus.logs.messages[event.room.domain].push(event);
 	//Torus.logs.plain[event.room.domain].push(event); //TODO: this is supposed to be like just text right?
 
-	if(event.room == Torus.ui.active || (event.room.viewing && Torus.ui.active.id >= 0)) {
+	if(event.room == Torus.ui.active || (event.room.viewing && Torus.ui.active != Torus.chats[0])) {
 		var scroll = false;
 		if(Torus.ui.ids['window'].offsetHeight + Torus.ui.ids['window'].scrollTop >= Torus.ui.ids['window'].scrollHeight) {scroll = true;}
 		Torus.ui.ids['window'].appendChild(Torus.ui.render_line(event));
 		if(scroll) {Torus.ui.ids['window'].scrollTop = Torus.ui.ids['window'].scrollHeight;}
 
 		if(Torus.ui.ids['window'].children.length > Torus.options['messages-general-max']) {Torus.ui.ids['window'].removeChild(Torus.ui.ids['window'].children[0]);}
+	}
+	else {
+		if(event.event == 'message' || event.event == 'me') {
+			Torus.ui.ids['tab-' + event.room.domain].classList.add('torus-tab-message');
+			if(event.room.parent) {Torus.ui.ping(event.room);}
+		}
+		else {Torus.ui.ids['tab-' + event.room.domain].classList.add('torus-tab-alert');}
+
 	}
 }
 
@@ -192,41 +200,38 @@ Torus.ui.initial = function(event) {
 		Torus.ui.render(Torus.ui.ids['window']);
 	}
 
-	if(event.room.parent) {Torus.ui.ping(event.room);}
+	if(event.room.parent && event.room != Torus.ui.active) {Torus.ui.ping(event.room);}
 }
 
 Torus.ui.parse_message = function(event) {
 	event.html = event.text;
 
 	var pinged = false;
-	if(event.user != wgUserName) {
-		var pings = Torus.options['pings-global-literal'];
-		pings += '\n' + Torus.options['pings-' + event.room.domain + '-literal'];
+	if(event.user != wgUserName && !event.room.parent && event.room != Torus.chats[0] && Torus.ui.pings.dir['#global'].enabled) {
+		var text = event.text.toLowerCase();
+		var global = Torus.ui.pings.dir['#global'];
+		var local = Torus.ui.pings.dir[event.room.domain];
 
-		pings = pings.toLowerCase().split('\n');
-		for(var i = 0; i < pings.length; i++) {
-			if(!pings[i]) {continue;}
-			if(event.text.toLowerCase().indexOf(pings[i]) != -1) {
-				Torus.ui.ping(event.room);
-				pinged = true;
-				break;
+		for(var i = 0; i < global.literal.length; i++) {
+			if(text.indexOf(global.literal[i]) != -1) {pinged = true; break;}
+		}
+		if(!pinged && local.enabled) {
+			for(var i = 0; i < local.literal.length; i++) {
+				if(text.indexOf(local.literal[i]) != -1) {pinged = true; break;}
 			}
 		}
-
 		if(!pinged) {
-			//FIXME: precompile these instead of recompiling them every time a message is received
-			pings = Torus.options['pings-global-regex'];
-			pings += '\n' + Torus.options['pings-' + event.room.domain + '-regex'];
-
-			pings = pings.split('\n');
-			for(var i = 0; i < pings.length; i++) {
-				if(!pings[i]) {continue;}
-				var ping = new RegExp(pings[i], 'ig');
-				if(ping.test(event.text)) {
-					Torus.ui.ping(event.room);
-					pinged = true;
-					break;
-				}
+			for(var i = 0; i < global.regex.length; i++) {
+				var test = global.regex[i].test(text)
+				global.regex[i].lastIndex = 0;
+				if(test) {pinged = true; break;}
+			}
+		}
+		if(!pinged && local.enabled) {
+			for(var i = 0; i < local.regex.length; i++) {
+				var test = local.regex[i].test(text);
+				local.regex[i].lastIndex = 0;
+				if(test) {pinged = true; break;}
 			}
 		}
 	}
@@ -234,7 +239,10 @@ Torus.ui.parse_message = function(event) {
 	while(event.html.indexOf('<') != -1) {event.html = event.html.replace('<', '&lt;');}
 	while(event.html.indexOf('>') != -1) {event.html = event.html.replace('>', '&gt;');}
 
-	if(pinged) {event.html = '<span class="torus-message-ping">' + event.html + '</span>';} //FIXME: set something on the li instead
+	if(pinged) { //FIXME: set something on the li instead
+		Torus.ui.ping(event.room);
+		event.html = '<span class="torus-message-ping">' + event.html + '</span>';
+	}
 
 	if(event.room.parent) {event.html = Torus.util.parse_links(event.html, event.room.parent.domain);}
 	else {event.html = Torus.util.parse_links(event.html, event.room.domain);}

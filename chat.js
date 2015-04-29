@@ -38,7 +38,7 @@ Torus.classes.Chat = function(domain, parent, users) {
 	}
 	else { //this is the status room
 		this.id = 0;
-		this.name = 'status'
+		this.name = '#status'
 		this.listeners = {
 			chat: {},
 			io: {},
@@ -176,13 +176,7 @@ Torus.classes.Chat.prototype.open_private = function(users, callback, id) {
 	}
 
 	var pm = Torus.open(id * 1, this, users);
-	if(!pm.connected) {
-		if(typeof callback == 'function') {pm.add_listener('chat', 'open', callback);}
-	}
-	else { //FIXME: everything
-		//Torus.ui.activate(id); FIXME: ui
-		//if(typeof callback == 'function') {callback.call(Torus.chats[id]);} //FIXME: callback expects a ChatEvent('open')
-	}
+	if(typeof callback == 'function') {callback.call(pm, new Torus.classes.ChatEvent('open', pm));}
 }
 
 Torus.classes.Chat.prototype.event_initial = function(data) {
@@ -209,7 +203,7 @@ Torus.classes.Chat.prototype['event_chat:add'] = function(data) {
 	if(!data.attrs.isInlineAlert) {
 		if(data.attrs.text.indexOf('/me') == 0) {
 			event.event = 'me';
-			event.text = data.attrs.text.substring(4);
+			event.text = data.attrs.text.substring(3).trim();
 		}
 		else {
 			event.event = 'message';

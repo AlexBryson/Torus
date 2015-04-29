@@ -3,7 +3,6 @@ Torus.io.ajax = function(method, post, callback) {
 	for(var i in post) {str += '&' + i + '=' + encodeURIComponent(post[i]);}
 	str = str.substring(1);
 	var xhr = new XMLHttpRequest();
-	xhr.responseType = 'json';
 	xhr.addEventListener('loadend', function() {
 		if(this.status == 200) {
 			if(typeof callback == 'function') {callback.call(Torus, this.response);}
@@ -11,6 +10,7 @@ Torus.io.ajax = function(method, post, callback) {
 		else {throw new Error('Request returned response ' + this.status + '. (io.ajax)');}
 	});
 	xhr.open('POST', '/index.php?action=ajax&rs=ChatAjax&method=' + method, true);
+	xhr.responseType = 'json';
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.setRequestHeader('Api-Client', 'Torus/' + Torus.version);
 	xhr.send(str);
@@ -48,7 +48,6 @@ Torus.io.unblock = function(user, callback) {
 
 Torus.io.key = function(callback) {
 	var xhr = new XMLHttpRequest();
-	xhr.responseType = 'json';
 	xhr.addEventListener('loadend', function() {
 		if(this.status == 200) {
 			if(typeof callback == 'function') {
@@ -65,6 +64,7 @@ Torus.io.key = function(callback) {
 		}
 	});
 	xhr.open('GET', '/wikia.php?controller=Chat&format=json', true);
+	xhr.responseType = 'json';
 	xhr.setRequestHeader('Api-Client', 'Torus/' + Torus.version);
 	xhr.send();
 }
@@ -76,7 +76,6 @@ Torus.io.spider = function(domain, callback) {
 	}
 
 	var xhr = new XMLHttpRequest();
-	xhr.responseType = 'json';
 	xhr.addEventListener('loadend', function() {
 		if(this.status == 200) {
 			if(!this.response.error) {Torus.cache.update(domain, this.response);}
@@ -84,68 +83,14 @@ Torus.io.spider = function(domain, callback) {
 		}
 		else {
 			if(typeof callback == 'function') {callback.call(Torus, {error: 'http', code: this.status});}
-			throw new Error('io.spider: request returned HTTP ' + this.status + '.');
+			throw new Error('io.spider: CORS proxy returned HTTP ' + this.status + '.');
 		}
 	});
 	xhr.open('GET', 'http://cis-linux2.temple.edu/~tuf23151/torus.php?domain=' + domain, true);
+	xhr.responseType = 'json';
 	xhr.setRequestHeader('Api-Client', 'Torus/' + Torus.version);
 	xhr.send();
 }
-
-/*Torus.io.transports.websocket = function(room, key, server, port, session) {
-	if(!(this instanceof Torus.io.transports.websocket)) {throw new Error('Must create transport with `new`.');}
-	if(!room || room <= 0 || !key || !server || !port || !session) {throw new Error('Invalid transport parameters. (io.transports.websocket)');}
-
-	this.ws = new WebSocket('ws://chat.wikia-services.com:' + port + '/socket.io/?EIO=2&transport=websocket&name=' + encodeURIComponent(wgUserName) + '&key=' + key + '&roomId=' + room + '&sid=' + session + '&serverId=' + server + '&client=Torus&version=' + Torus.version);
-	this.ws.onmessage = function(event) { //FIXME: this forces a closure scope
-		if(event.data.substring(0, 3) != '2::') {Torus.logs.socket[room].push({id: (new Date()).getTime(), message: event.data});} //FIXME: ui
-		switch(event.data.substring(0, 3)) {
-			case '0::': //disconnect
-				Torus.chats[room].disconnect('Server closed the connection');
-				break;
-			case '1::': //connect
-				if(!Torus.chats[room]) {throw new Error('Missing room on successful connect');}
-				Torus.chats[room].connecting = false;
-				Torus.chats[room].connected = true;
-				Torus.chats[room].send_command('initquery');
-				Torus.alert('Connected.', Torus.chat[room]);
-				Torus.io.getBlockedPrivate();
-				Torus.call_listeners(new Torus.classes.IOEvent('open', Torus.chats[room]));
-				break;
-			case '2::': //heartbeat
-				this.send('2::');
-				break;
-			case '4::': //json
-				Torus.chats[room].receive(JSON.parse(event.data.substring(4)));
-				break;
-			case '7::': //error
-				if(event.data.substring(4) == '1+0') {Torus.chats[room].reconnect();}
-				else {Torus.chats[room].disconnect('Protocol error: ' + event.data.substring(4));}
-				break;
-			case '3::': //message
-			case '5::': //event
-			case '6::': //ack
-			case '8::': //noop
-				Torus.chats[room].disconnect('Protocol error: Received unimplemented data type ' + event.data);
-				break;
-		}
-	}
-	this.ws.onerror = this.ws.onclose = function(event) {
-		if(!Torus.chats[room].connected) {
-			//Torus.alert('Websocket rejected, failing over to HTTP...', room);
-			Torus.chats[room].transport = 'polling';
-			Torus.chats[room].connecting = false;
-			Torus.open(room); //FIXME: Torus.open
-		}
-		else if(event.reason) {Torus.chats[room].disconnect(event.reason);}
-		else {Torus.chats[room].disconnect('Socket error (websocket)');}
-	}
-}
-Torus.io.transports.websocket.prototype.send = function(message) {this.ws.send('3:::' + message);}
-Torus.io.transports.websocket.prototype.close = function(silence) {
-	if(silence) {this.ws.onclose = null;}
-	this.ws.close();
-}*/
 
 Torus.io.transports.polling = function(domain, info) {
 	if(!(this instanceof Torus.io.transports.polling)) {throw new Error('Must create transport with `new`.');}
@@ -209,7 +154,7 @@ Torus.io.transports.polling.prototype.poll = function() {
 
 	this.xhr = new XMLHttpRequest();
 	this.xhr.sock = this;
-	this.xhr.addEventListener('load', function() { //FIXME: hardcoded function
+	this.xhr.addEventListener('loadend', function() { //FIXME: hardcoded function
 		if(this.sock.xhr != this) {console.log('xhr returned and found itself orphaned:', this.sock);}
 		if(this.status == 200) {
 			//As far as I know all messages begin with a null byte (to tell socket.io that they are strings)
@@ -222,15 +167,23 @@ Torus.io.transports.polling.prototype.poll = function() {
 			//following that is the message type, and then immediately thereafter is the actual message content
 			//I swear to god socket.io must have been high when they designed this
 
-			for(var ufffd = this.responseText.indexOf('\ufffd'); ufffd != -1; ufffd = this.responseText.indexOf('\ufffd', ufffd + 1)) {
-				var text = this.responseText.substring(ufffd + 1, ufffd + 1 + Torus.util.stupid_to_int(this.responseText.slice(1, ufffd)));
-				var packet_type = this.responseText.charAt(ufffd + 1) * 1;
+			var data = this.responseText;
+			while(data.length > 0) {
+			//for(var ufffd = this.responseText.indexOf('\ufffd'); ufffd != -1; ufffd = this.responseText.indexOf('\ufffd', ufffd + 1)) {
+				var ufffd = data.indexOf('\ufffd');
+				var end = 1 + ufffd + Torus.util.stupid_to_int(data.substring(1, ufffd));
+				var text = data.substring(1 + ufffd, end);
+				data = data.substring(end);
+				var packet_type = text.charAt(0) * 1;
+				text = text.substring(1);
+				
 
 				var sock = this.sock;
+
 				switch(packet_type) {
 					case 0: //connect
 						//we should only reach this once, hopefully
-						var data = JSON.parse(text.substring(1));
+						var data = JSON.parse(text);
 						sock.session = data.sid;
 						sock.ping_interval = Math.floor(data.pingTimeout * 3 / 4); //pingTimeout is the longest we can go without disconnecting
 						if(sock.iid) {clearInterval(sock.iid);}
@@ -248,7 +201,8 @@ Torus.io.transports.polling.prototype.poll = function() {
 						sock.ping();
 						break;
 					case 4: //message
-						var message_type = this.responseText.charAt(ufffd + 2) * 1;
+						var message_type = text.charAt(0) * 1;
+						text = text.substring(1);
 						//Torus.logs.socket[sock.room].push({id: (new Date()).getTime(), type: message_type, message: text}); //FIXME: ui
 						switch(message_type) { //yep, there are two of these
 							case 0: //connect
@@ -270,7 +224,7 @@ Torus.io.transports.polling.prototype.poll = function() {
 								sock.call_listeners({
 									type: 'io',
 									event: 'message',
-									message: JSON.parse(text.substring(2))[1],
+									message: JSON.parse(text)[1],
 									sock: sock
 								});
 								break;
@@ -278,18 +232,18 @@ Torus.io.transports.polling.prototype.poll = function() {
 								sock.call_listeners({
 									type: 'io',
 									event: 'disconnect',
-									message: 'Protocol error: ' + JSON.parse(text.substring(2)),
+									message: 'Protocol error: ' + JSON.parse(text)[1],
 									sock: sock
 								});
 								return;
 							case 3: //ack
 							case 5: //binary event
 							case 6: //binary ack
-								console.log('Unimplemented data type: ', text);
+								console.log('Unimplemented data type: ' + this.responseText);
 								sock.call_listeners({
 									type: 'io',
 									event: 'disconnect',
-									message: 'Protocol error: Received unimplemented data type ' + text.substring(2),
+									message: 'Protocol error: Received unimplemented data type `' + message_type + '`',
 									sock: sock
 								});
 								return;
@@ -300,19 +254,22 @@ Torus.io.transports.polling.prototype.poll = function() {
 						break;
 					case 5: //upgrade
 					default:
+						console.log('Unimplemented data type: ' + this.responseText);
 						sock.call_listeners({
 							type: 'io',
 							event: 'disconnect',
-							message: 'Protocol error: Received unimplemented data type ' + text,
+							message: 'Protocol error: Received unimplemented data type `' + packet_type + '`',
 							sock: sock
 						});
-						if(this.iid) {clearInterval(this.iid);}
 						return;
 				}
 			}
 			this.sock.poll();
 		} //status == 200
-		else if(this.status == 404) {this.sock.poll();} //this apparently happens a lot
+		else if(this.status == 400 || this.status == 404) {
+			this.sock.session = '';
+			this.sock.poll();
+		}
 		else if(this.status != 0) {
 			this.sock.call_listeners({
 				type: 'io',
@@ -320,7 +277,6 @@ Torus.io.transports.polling.prototype.poll = function() {
 				message: 'Socket error (polling): HTTP status ' + this.status,
 				sock: this.sock
 			});
-			if(this.iid) {clearInterval(this.iid);}
 		}
 		else {console.log('HTTP status 0: ', this.sock);}
 	});

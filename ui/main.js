@@ -24,25 +24,6 @@ Torus.logs = {
 	socket: {},
 };
 
-Torus.ui.ping = function(room) { //FIXME: highlight room name in red or something
-	if(room != Torus.ui.active) {Torus.ui.ids['tab-' + room.domain].classList.add('torus-tab-ping');}
-
-	if(Torus.options['pings-general-enabled'] && Torus.ui.window.parentNode && Torus.data.pinginterval == 0) {
-		Torus.data.titleflash = document.title;
-		document.title = Torus.options['pings-general-alert'];
-		Torus.data.pinginterval = setInterval(function() {
-			if(document.title != Torus.options['pings-general-alert']) {document.title = Torus.options['pings-general-alert'];}
-			else {document.title = Torus.data.titleflash;}
-		}, Torus.options['pings-general-interval']);
-		if(Torus.options['pings-general-beep']) {
-			var beep = document.createElement('audio');
-			beep.src = Torus.options['pings-general-sound'];
-			beep.play();
-		}
-	}
-	Torus.call_listeners(new Torus.classes.UIEvent('ping', room));
-}
-
 Torus.ui.fullscreen = function() {
 	if(Torus.data.fullscreen) {
 		document.body.removeChild(Torus.ui.window);
@@ -109,11 +90,13 @@ Torus.ui.onload = function() {
 
 {{MediaWiki:Torus.js/ui/popup.js}}
 
+{{MediaWiki:Torus.js/ui/menu.js}}
+
+{{MediaWiki:Torus.js/ui/pings.js}}
+
 {{MediaWiki:Torus.js/ui/chat_listeners.js}}
 
 {{MediaWiki:Torus.js/ui/dom_listeners.js}}
-
-{{MediaWiki:Torus.js/ui/menu.js}}
 
 {{MediaWiki:Torus.js/ui/constructors.js}}
 
@@ -185,6 +168,7 @@ Torus.add_listener('window', 'load', Torus.ui.onload);
 
 Torus.chats[0].add_listener('io', 'alert', Torus.ui.add_line);
 for(var i in Torus.logs) {Torus.logs[i][0] = [];}
+Torus.chats[0].listeners.ui = {};
 Torus.ui.add_room({room: Torus.chats[0]});
 Torus.ui.show(Torus.chats[0]);
 

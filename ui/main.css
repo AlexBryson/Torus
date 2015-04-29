@@ -51,25 +51,68 @@
 	background-color: #fff;
 	font-weight: bold;
 }
+#torus-tabs span.torus-tab-alert {color: #909;}
+#torus-tabs span.torus-tab-message {color: #ff0;}
+#torus-tabs span.torus-tab-ping {color: red;}
 #torus-tabs span.torus-tab-close {
 	font-size: .65em;
 	margin-left: .6em;
 	vertical-align: top;
 	line-height: .8em;
+	font-weight: bold;
+	color: #000;
 }
-#torus-tabs span.torus-tab-close:hover {
-	color: red;
-}
-#torus-tabs span.torus-tab-ping {
-	color: red;
-}
+#torus-tabs span.torus-tab-close:hover {color: red;}
 #torus-tabs #torus-tab--1 { /*#id #id is dumb but without this #torus-tabs span.torus-tab overrides this*/
 	position: absolute;
 	top: .2em;
 	right: 0;
 }
-#torus-tab--1 img {
-	vertical-align: top;
+#torus-tab--1 img {vertical-align: top;}
+
+#torus-info {
+	position: absolute;
+	top: 3em;
+	left: 0;
+	right: 15em;
+	height: 2em;
+	line-height: 2em;
+	background-color: #dde;
+	border-top: 1px solid #000;
+	border-right: 1px solid #000;
+	text-align: center;
+}
+
+#torus-window {
+	position: absolute;
+	top: 5em;
+	bottom: 4em;
+	left: 0;
+	right: 15em;
+	background-color: #ccf;
+	border-top: 1px solid #000;
+	border-right: 1px solid #000;
+	margin: 0;
+	padding: .3em .5em;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	list-style: none;
+	font-family: monospace;
+	word-wrap: break-word;
+}
+#torus-window div.torus-message-inactive {color: #666;}
+#torus-window span.torus-message-ping {color: red;}
+#torus-window span.torus-whitespace {white-space: pre;}
+#torus-window fieldset {border: 1px solid #66f;}
+#torus-window fieldset legend {font-size: 1.5em;}
+#torus-window textarea {
+	resize: vertical;
+	width: 100%;
+	display: block;
+}
+#torus-window input[type="checkbox"] {
+	vertical-align: bottom;
+	margin: 0;
 }
 
 #torus-sidebar {
@@ -91,9 +134,7 @@
 	line-height: 1.5em;
 	margin: 0;
 }
-#torus-sidebar li.torus-user {
-	padding-left: 1.5em;
-}
+#torus-sidebar li.torus-user {padding-left: 1.5em;}
 #torus-sidebar span.torus-user-away {
 	color: #666;
 	font-style: italic;
@@ -108,8 +149,19 @@
 	margin-top: .1em;
 	vertical-align: baseline;
 }
-#torus-sidebar img.torus-user-icon-staff {
-	margin-top: .2em;
+#torus-sidebar img.torus-user-icon-staff {margin-top: .2em;}
+#torus-sidebar li.torus-sidebar-button {
+	padding: .1em .5em;
+	background-color: #99f;
+	cursor: pointer;
+	font-size: larger;
+}
+#torus-sidebar li.torus-sidebar-button:hover {
+	background-color: #def;
+}
+#torus-sidebar li.torus-sidebar-button-selected,
+#torus-sidebar li.torus-sidebar-button-selected:hover {
+	background-color: #fff;
 }
 
 #torus-popup {
@@ -145,9 +197,7 @@
 	font-size: 1.5em;
 	font-weight: bold;
 }
-#torus-popup-status-state {
-	font-size: larger;
-}
+#torus-popup-status-state {font-size: larger;}
 #torus-popup-status-message {
 	line-height: 1em;
 	font-style: italic;
@@ -167,9 +217,7 @@
 	display: inline-block;
 	width: 50%;
 }
-#torus-popup-userlinks div:last-child a.torus-popup-userlink {
-	border-top: 0;
-}
+#torus-popup-userlinks div:last-child a.torus-popup-userlink {border-top: 0;}
 #torus-popup a.torus-popup-action,
 #torus-popup a.torus-popup-action-disabled {
 	margin-top: .5em;
@@ -207,50 +255,9 @@
 	bottom: auto;
 	margin-top: -.5em;
 }
-#torus-popup-banbutton {
-	cursor: pointer;
-}
-#torus-popup a.torus-popup-action:hover #torus-popup-banmodal {
-	display: block;
-}
+#torus-popup-banbutton {cursor: pointer;}
+#torus-popup a.torus-popup-action:hover #torus-popup-banmodal {display: block;}
 
-#torus-info {
-	position: absolute;
-	top: 3em;
-	left: 0;
-	right: 15em;
-	height: 2em;
-	line-height: 2em;
-	background-color: #dde;
-	border-top: 1px solid #000;
-	border-right: 1px solid #000;
-	text-align: center;
-}
-
-#torus-window {
-	position: absolute;
-	top: 5em;
-	bottom: 4em;
-	left: 0;
-	right: 15em;
-	background-color: #ccf;
-	border-top: 1px solid #000;
-	border-right: 1px solid #000;
-	margin: 0;
-	padding: .3em .5em;
-	overflow-y: scroll;
-	overflow-x: hidden;
-	list-style: none;
-	font-family: monospace;
-	white-space: pre;
-	word-wrap: break-word;
-}
-#torus-window div.torus-message-inactive {
-	color: #666;
-}
-#torus-window span.torus-message-ping {
-	color: red;
-}
 #torus-input {
 	position: absolute;
 	bottom: 0;
@@ -270,12 +277,8 @@
 	resize: none;
 }
 
-.torus-fakelink {
-	cursor: pointer;
-}
+#torus a.torus-fakelink {cursor: pointer;}
 
 {{MediaWiki:Torus.js/ui/menu.css}}
-
-{{MediaWiki:Torus.js/ui/options.css}}
 
 {{MediaWiki:Torus.js/ext/ccui.css}}
